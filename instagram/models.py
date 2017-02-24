@@ -62,10 +62,8 @@ class Media(ApiModel):
         else:
             return self.videos['low_resolution'].url
 
-
     def get_thumbnail_url(self):
         return self.images['thumbnail'].url
-
 
     def __unicode__(self):
         return "Media: %s" % self.id
@@ -76,6 +74,10 @@ class Media(ApiModel):
         new_media.type = entry['type']
 
         new_media.user = User.object_from_dictionary(entry['user'])
+
+        # fix media type (API bug??)
+        if new_media.type == 'video' and 'videos' not in entry and 'images' in entry:
+            new_media.type = 'image'
 
         new_media.images = {}
         for version, version_info in six.iteritems(entry['images']):
@@ -112,7 +114,7 @@ class Media(ApiModel):
         new_media.caption = None
         if entry['caption']:
             new_media.caption = Comment.object_from_dictionary(entry['caption'])
-        
+
         new_media.tags = []
         if entry['tags']:
             for tag in entry['tags']:
@@ -181,9 +183,10 @@ class Location(ApiModel):
         if 'latitude' in entry:
             point = Point(entry.get('latitude'),
                           entry.get('longitude'))
-        location = Location(entry.get('id', 0),
-                       point=point,
-                       name=entry.get('name', ''))
+        location = Location(
+            entry.get('id', 0),
+            point=point,
+            name=entry.get('name', ''))
         return location
 
     def __unicode__(self):
